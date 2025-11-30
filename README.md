@@ -58,6 +58,12 @@ The server will start listening on the configured port (default: 8080).
 
 Configuration is currently handled via `src/config.zig`. Future versions will support external configuration files (JSON/YAML/TOML).
 
+## Documentation
+
+- **[Roadmap](docs/ROADMAP.md)**: Feature roadmap and development phases
+- **[Architecture](docs/ARCHITECTURE.md)**: System design and component details
+- **[Contributing](docs/CONTRIBUTING.md)**: How to contribute to the project
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
