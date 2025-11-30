@@ -42,21 +42,19 @@ graph TB
 
 ### 1. Network Layer
 
-**File**: `src/server.zig`
+**Files**: `src/server.zig`, `src/loop.zig`, `src/socket.zig`
 
-Handles low-level TCP/TLS connections.
+Handles low-level TCP/TLS connections using an event loop.
 
 **Responsibilities**:
-- Accept incoming connections
-- Manage connection lifecycle
-- TLS termination
-- Connection pooling
-- Async I/O operations
+- Accept incoming connections (Non-blocking)
+- Manage connection lifecycle via State Machine
+- Interface with OS event notification systems (`kqueue`/`epoll`)
 
 **Key Design Decisions**:
-- Use Zig's async/await for non-blocking I/O
-- Connection pool per upstream server
-- Configurable timeouts and buffer sizes
+- **No Threads per Client**: Eliminates context switching overhead.
+- **Raw Socket Usage**: Direct control over socket options and behavior.
+- **Platform Abstraction**: `loop.zig` provides a unified interface for different OS event mechanisms.
 
 ### 2. HTTP Parser
 
@@ -277,26 +275,32 @@ sequenceDiagram
 
 ## Concurrency Model
 
-### Thread Architecture
+### Event Loop Architecture
 
+Zoxy uses a single-threaded (or multi-worker) event loop architecture, similar to Nginx and Node.js.
+
+```mermaid
+graph TD
+    Loop[Event Loop (kqueue/epoll)]
+    Loop -->|New Connection| Accept[Accept Handler]
+    Loop -->|Read Ready| Read[Read Handler]
+    Loop -->|Write Ready| Write[Write Handler]
+    
+    Accept -->|Create Client| State[Client State Machine]
+    Read -->|Update State| State
+    Write -->|Update State| State
 ```
-Main Thread
-├── Configuration Watcher
-├── Metrics Collector
-└── Worker Pool (N threads)
-    ├── Worker 1: Handle Connections
-    ├── Worker 2: Handle Connections
-    └── Worker N: Handle Connections
 
-Health Check Thread
-└── Poll Upstream Servers
-```
+### Non-Blocking I/O
 
-### Async I/O
+- **I/O Multiplexing**: Uses `kqueue` on macOS and `epoll` on Linux (planned) to monitor thousands of file descriptors efficiently.
+- **Non-blocking Sockets**: All sockets are set to `O_NONBLOCK`. Operations that would block return `EAGAIN`/`EWOULDBLOCK` immediately.
+- **State Machines**: Each client connection is managed by a state machine (`ClientState`) that tracks progress (Reading Request -> Processing -> Sending Response).
 
-- Use Zig's async/await for non-blocking operations
-- Event loop per worker thread
-- Shared-nothing architecture between workers
+### Threading
+
+- **Main Thread**: Runs the Event Loop.
+- **Worker Threads** (Future): For CPU-bound tasks (compression, encryption) or to scale across multiple cores (one loop per core).
 
 ---
 

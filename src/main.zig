@@ -8,7 +8,7 @@ pub fn main() !void {
     const allocator = gpa.allocator();
 
     const conf = try config.load(allocator);
-    
+
     var srv = server.Server.init(allocator, conf);
     try srv.start();
 }

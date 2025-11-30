@@ -14,7 +14,8 @@ Build a high-performance, production-ready reverse proxy that rivals industry st
 
 ### Milestone 1.1: Basic HTTP Proxy ✅ (In Progress)
 - [x] TCP server setup
-- [x] Basic connection handling
+- [x] Event Loop implementation (kqueue)
+- [x] Non-blocking socket abstraction
 - [ ] HTTP/1.1 request parsing
 - [ ] HTTP/1.1 response forwarding
 - [ ] Basic error handling
@@ -71,8 +72,8 @@ Build a high-performance, production-ready reverse proxy that rivals industry st
 **Goal**: Optimize for high-throughput and low-latency scenarios.
 
 ### Milestone 3.1: Performance Optimization
-- [ ] Async I/O with io_uring (Linux)
-- [ ] Zero-copy operations where possible
+- [ ] Advanced I/O with io_uring (Linux)
+- [ ] Zero-copy operations (`sendfile`, `splice`)
 - [ ] Connection keep-alive optimization
 - [ ] Memory pool management
 - [ ] CPU affinity for worker threads

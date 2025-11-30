@@ -1,16 +1,19 @@
 const std = @import("std");
 const Config = @import("config.zig").Config;
 
-pub fn handleConnection(allocator: std.mem.Allocator, connection: std.net.Server.Connection, config: Config) !void {
+pub fn onRead(allocator: std.mem.Allocator, client: anytype) !void {
+    // TODO: Read from client.fd
+    // If request is complete, change state to SENDING_RESPONSE
+    // Register interest in WRITE
     _ = allocator;
-    _ = config;
-    defer connection.stream.close();
+    _ = client;
+    return error.NotImplemented;
+}
 
-    var buffer: [1024]u8 = undefined;
-    const bytes_read = try connection.stream.read(&buffer);
-    
-    std.debug.print("Received {d} bytes\n", .{bytes_read});
-    
-    // Echo back for now
-    _ = try connection.stream.write(buffer[0..bytes_read]);
+pub fn onWrite(allocator: std.mem.Allocator, client: anytype) !void {
+    // TODO: Write response to client.fd
+    // If response is complete, close connection or reset state
+    _ = allocator;
+    _ = client;
+    return error.NotImplemented;
 }

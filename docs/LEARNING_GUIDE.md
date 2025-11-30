@@ -16,28 +16,41 @@ This document provides a structured learning path for building Zoxy from the gro
 
 ## Phase 1: Foundation
 
-### 1.1 Network Programming Basics
-
-**Key Concepts**:
-- TCP/IP fundamentals
-- Sockets (bind, listen, accept, read, write)
-- Blocking vs non-blocking I/O
-- Connection lifecycle
-
-**Reading List**:
-- [Beej's Guide to Network Programming](https://beej.us/guide/bgnet/) - Classic introduction to sockets
-- [The C10K Problem](http://www.kegel.com/c10k.html) - Understanding scalability challenges
-- Zig Standard Library: `std.net` documentation
-
-**Progressive Implementation**:
-1. Create a simple TCP echo server (accept connection, echo back)
-2. Add multiple client support (one at a time)
-3. Implement basic error handling
-4. Add connection timeouts
-
-**Files to Create/Modify**:
-- `src/server.zig` - Basic TCP server
-- `tests/server_test.zig` - Server tests
+### 1.1 Non-Blocking I/O & Event Loops
+ 
+ **Key Concepts**:
+ - Blocking vs Non-blocking Sockets
+ - I/O Multiplexing (`kqueue`, `epoll`)
+ - Event Loops
+ - State Machines
+ 
+ **Reading List**:
+ - [Beej's Guide to Network Programming](https://beej.us/guide/bgnet/) - Focus on `select()`/`poll()` sections
+ - [The C10K Problem](http://www.kegel.com/c10k.html) - Why threads don't scale
+ - [Kqueue Tutorial](https://wiki.netbsd.org/tutorials/kqueue_tutorial/) (for macOS/BSD)
+ 
+ **Progressive Implementation**:
+ 1. Create a `kqueue` wrapper (`src/loop.zig`)
+ 2. Create a non-blocking socket listener
+ 3. Implement an event loop to accept connections
+ 4. Handle read/write events using a state machine
+ 
+ **Files to Create/Modify**:
+ - `src/loop.zig` - Event loop wrapper
+ - `src/socket.zig` - Socket helpers
+ - `src/server.zig` - Event-driven server
+ 
+ **Practical Mini-Project**: 🎯
+ 
+ **Project**: Build a "Single-Threaded Chat Server"
+ - Accept multiple client connections using `kqueue`
+ - Store active clients in a list/map
+ - Broadcast messages to all clients when one writes
+ - **Constraint**: Do NOT use `std.Thread.spawn`
+ 
+ **Why**: This forces you to understand how Nginx and Node.js work under the hood.
+ 
+ **Time**: 4-6 hours
 
 ---
 
@@ -67,6 +80,19 @@ This document provides a structured learning path for building Zoxy from the gro
 - `src/http/response.zig` - Response struct
 - `tests/http_parser_test.zig` - Parser tests
 
+**Practical Mini-Project**: 🎯
+
+**Project**: Build a "Static File Server"
+- Parse HTTP GET requests
+- Serve files from a directory
+- Return proper status codes (200, 404, 500)
+- Add Content-Type headers based on file extension
+- Support Range requests for partial content
+
+**Why**: You'll deeply understand HTTP request/response format and header handling.
+
+**Time**: 4-6 hours
+
 ---
 
 ### 1.3 Basic Reverse Proxy
@@ -94,6 +120,19 @@ This document provides a structured learning path for building Zoxy from the gro
 - `src/upstream.zig` - Upstream connection management
 - `tests/proxy_test.zig` - Proxy tests
 
+**Practical Mini-Project**: 🎯
+
+**Project**: Build a "Request Logger Proxy"
+- Forward all requests to a target server (e.g., httpbin.org)
+- Log request method, path, headers to console
+- Log response status code and size
+- Add request/response timing
+- Handle connection errors with retry (max 3 attempts)
+
+**Why**: This is your first real proxy! You'll learn request forwarding and error handling.
+
+**Time**: 3-5 hours
+
 ---
 
 ### 1.4 Configuration Management
@@ -120,6 +159,19 @@ This document provides a structured learning path for building Zoxy from the gro
 - `src/config.zig` - Configuration management
 - `config.example.yaml` - Example configuration
 - `tests/config_test.zig` - Config tests
+
+**Practical Mini-Project**: 🎯
+
+**Project**: Build a "Config-Driven App Launcher"
+- Read YAML/JSON config with app definitions
+- Each app has: name, command, args, env vars
+- Validate config (required fields, valid paths)
+- Launch apps based on config
+- Support hot-reload: watch config file, restart apps on change
+
+**Why**: Learn config parsing, validation, and file watching - essential for production software.
+
+**Time**: 3-4 hours
 
 ---
 
@@ -151,6 +203,20 @@ This document provides a structured learning path for building Zoxy from the gro
 - `src/health_check.zig` - Health checking
 - `tests/loadbalancer_test.zig` - LB tests
 
+**Practical Mini-Project**: 🎯
+
+**Project**: Build a "Multi-Backend Load Balancer"
+- Start 3 simple HTTP servers on different ports (use your file server)
+- Implement round-robin selection
+- Add health checks: ping `/health` every 5 seconds
+- Mark unhealthy backends and skip them
+- Automatically re-add when healthy
+- Track request count per backend
+
+**Why**: Understand load balancing algorithms and health checking in practice.
+
+**Time**: 4-6 hours
+
 ---
 
 ### 2.2 TLS/SSL Support
@@ -180,6 +246,19 @@ This document provides a structured learning path for building Zoxy from the gro
 - `src/cert_manager.zig` - Certificate management
 - `tests/tls_test.zig` - TLS tests
 
+**Practical Mini-Project**: 🎯
+
+**Project**: Build an "HTTPS File Server"
+- Generate self-signed certificate (use openssl)
+- Modify your file server to accept HTTPS connections
+- Implement TLS termination
+- Support both HTTP and HTTPS on different ports
+- Add certificate validation logging
+
+**Why**: Hands-on experience with TLS/SSL before adding it to the proxy.
+
+**Time**: 3-5 hours
+
 ---
 
 ### 2.3 Advanced Routing
@@ -208,35 +287,49 @@ This document provides a structured learning path for building Zoxy from the gro
 - `src/route.zig` - Route definition
 - `tests/router_test.zig` - Router tests
 
+**Practical Mini-Project**: 🎯
+
+**Project**: Build a "Multi-Service Router"
+- Route `/api/*` to backend service on port 3000
+- Route `/static/*` to file server on port 8080
+- Route `/admin/*` to admin service on port 9000
+- Implement path rewriting: `/api/users` → `/users`
+- Add host-based routing: `api.example.com` → port 3000
+- Support wildcard patterns and regex
+
+**Why**: Master routing logic and URL manipulation before production use.
+
+**Time**: 4-6 hours
+
 ---
 
 ## Phase 3: Performance & Scalability
 
-### 3.1 Async I/O and Concurrency
+### 3.1 Advanced Async I/O (io_uring)
 
 **Key Concepts**:
-- Event loops (epoll, kqueue, io_uring)
-- Async/await patterns
-- Thread pools
-- Lock-free data structures
+- Ring buffers
+- Submission Queue (SQ) & Completion Queue (CQ)
+- Zero-copy networking
+- Kernel-bypass techniques
 
 **Reading List**:
-- [The Linux Programming Interface - I/O Multiplexing](https://man7.org/tlpi/)
-- [io_uring Introduction](https://kernel.dk/io_uring.pdf)
-- [Zig Async/Await](https://ziglang.org/documentation/master/#Async-Functions)
-- [Lock-Free Programming](https://preshing.com/20120612/an-introduction-to-lock-free-programming/)
+- [Lord of the io_uring](https://unixism.net/loti/)
+- [Efficient IO with io_uring](https://kernel.dk/io_uring.pdf)
 
 **Progressive Implementation**:
-1. Convert to async I/O (epoll/kqueue)
-2. Implement event loop
-3. Add worker thread pool
-4. Use io_uring (Linux only)
-5. Implement lock-free connection pool
+1. Implement `io_uring` backend for Linux (alongside `kqueue`)
+2. Benchmark `io_uring` vs `epoll`/`kqueue`
+3. Implement zero-copy writes (`SPLICE`)
 
 **Files to Create/Modify**:
-- `src/event_loop.zig` - Event loop
-- `src/worker.zig` - Worker threads
-- `src/async_io.zig` - Async I/O wrapper
+- `src/loop_linux.zig` - io_uring implementation
+
+**Practical Mini-Project**: 🎯
+
+**Project**: Build a "High-Performance File Server"
+- Use `io_uring` to serve files
+- Compare throughput with standard `read`/`write`
 
 ---
 
@@ -266,6 +359,20 @@ This document provides a structured learning path for building Zoxy from the gro
 - `src/cache_policy.zig` - Cache policies
 - `tests/cache_test.zig` - Cache tests
 
+**Practical Mini-Project**: 🎯
+
+**Project**: Build a "Caching Proxy Server"
+- Cache GET responses in memory (HashMap)
+- Respect Cache-Control: max-age, no-cache, no-store
+- Implement ETag validation (If-None-Match)
+- Add LRU eviction (max 100 items)
+- Provide cache stats endpoint: hit rate, size, entries
+- Support cache invalidation via DELETE requests
+
+**Why**: Learn caching strategies and HTTP cache semantics hands-on.
+
+**Time**: 5-7 hours
+
 ---
 
 ### 3.3 HTTP/2 Support
@@ -292,6 +399,19 @@ This document provides a structured learning path for building Zoxy from the gro
 - `src/http2/frame.zig` - HTTP/2 frames
 - `src/http2/stream.zig` - Stream management
 - `src/http2/hpack.zig` - HPACK compression
+
+**Practical Mini-Project**: 🎯
+
+**Project**: Build an "HTTP/2 Frame Parser"
+- Parse HTTP/2 binary frames from raw bytes
+- Support HEADERS, DATA, SETTINGS frames
+- Implement HPACK header compression/decompression
+- Create a simple HTTP/2 client that sends requests
+- Visualize frame flow (print frame types and sizes)
+
+**Why**: HTTP/2 is complex - start with parsing before full implementation.
+
+**Time**: 8-10 hours (this is advanced!)
 
 ---
 
@@ -324,6 +444,20 @@ This document provides a structured learning path for building Zoxy from the gro
 - `src/metrics.zig` - Metrics collection
 - `src/tracing.zig` - Distributed tracing
 
+**Practical Mini-Project**: 🎯
+
+**Project**: Build a "Metrics Dashboard Server"
+- Collect metrics: request count, latency, errors
+- Export Prometheus format at `/metrics`
+- Implement structured JSON logging
+- Add request tracing with correlation IDs
+- Create simple HTML dashboard showing live metrics
+- Support log levels: DEBUG, INFO, WARN, ERROR
+
+**Why**: Observability is critical for production - learn to instrument code properly.
+
+**Time**: 5-7 hours
+
 ---
 
 ### 4.2 Security Features
@@ -351,6 +485,20 @@ This document provides a structured learning path for building Zoxy from the gro
 - `src/rate_limiter.zig` - Rate limiting
 - `src/security.zig` - Security features
 - `src/waf.zig` - WAF rules
+
+**Practical Mini-Project**: 🎯
+
+**Project**: Build a "Security Gateway"
+- Implement token bucket rate limiter (100 req/min per IP)
+- Add IP allowlist/blocklist
+- Validate request size limits (max 1MB)
+- Inject security headers (X-Frame-Options, CSP, etc.)
+- Block common attack patterns (SQL injection in query params)
+- Log security events to separate file
+
+**Why**: Security is non-negotiable in production - practice defense in depth.
+
+**Time**: 4-6 hours
 
 ---
 
